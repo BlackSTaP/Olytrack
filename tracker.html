@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oly Tracker - Многопользовательский</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #060b16; border-radius: 8px; }
+  ::-webkit-scrollbar-thumb { background: #1f2c45; border-radius: 8px; }
+  ::-webkit-scrollbar-thumb:hover { background: #2a3b58; }
+  input[type=number]::-webkit-inner-spin-button, 
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+</style>
+</head>
+
+<body class="bg-[#070e1a] text-gray-200 min-h-screen p-4 flex flex-col items-center font-sans">
+
+<!-- ПАНЕЛЬ УПРАВЛЕНИЯ ПРОФИЛЯМИ -->
+<div class="bg-[#0f1a2b] border border-[#1f2c45] rounded-xl w-full max-w-5xl p-4 mb-6 flex flex-col sm:flex-row gap-4 items-center justify-between shadow-2xl">
+    <div class="flex items-center gap-3 w-full sm:w-auto">
+        <span class="text-cyan-400 font-bold text-lg">Профиль:</span>
+        <select id="profileSelect" class="bg-[#1c283a] border border-[#2a3b58] rounded-lg px-4 py-2 text-white outline-none focus:border-cyan-500 min-w-[200px] flex-1 cursor-pointer transition">
+            <option value="">-- Загрузка... --</option>
+        </select>
+    </div>
+    <div class="flex gap-3 w-full sm:w-auto">
+        <button id="createProfileBtn" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-500 px-5 py-2 rounded-lg font-bold transition shadow">+ Создать</button>
+        <button id="deleteProfileBtn" class="flex-1 sm:flex-none bg-red-700/80 hover:bg-red-600 px-5 py-2 rounded-lg font-bold transition shadow hidden">Удалить</button>
+    </div>
+</div>
+
+<!-- ЗАГЛУШКА (Если профиль не выбран) -->
+<div id="noProfileMsg" class="text-gray-500 text-lg mt-20 flex flex-col items-center text-center">
+    <svg class="w-16 h-16 mb-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+    Пожалуйста, выберите существующий профиль<br>или создайте новый, чтобы начать подсчет.
+</div>
+
+<!-- ОСНОВНОЙ КОНТЕНТ (Скрыт, пока не выбран профиль) -->
+<div id="appContent" class="hidden w-full max-w-5xl flex-col lg:flex-row items-center lg:items-start justify-center gap-6">
+
+    <!-- ОСНОВНОЙ БЛОК ТРЕКЕРА -->
+    <div class="bg-[#0f1a2b] border border-[#1f2c45] rounded-xl w-full max-w-md p-6 shadow-2xl">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-cyan-400">Oly Tracker</h2>
+            <span id="status" class="text-xs text-green-500 font-bold bg-green-500/10 px-2 py-1 rounded-full">online</span>
+        </div>
+
+        <h3 class="text-center text-white text-lg mb-4">
+            Ник: <span id="displayNick" class="text-cyan-300">...</span>
+        </h3>
+
+        <div class="space-y-4 mb-4">
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Ник персонажа:</label>
+                <input id="nickInput" class="w-full bg-[#1c283a] border border-[#2a3b58] rounded-lg px-4 py-2 text-white outline-none focus:border-cyan-500 transition">
+            </div>
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Стартовые ПТС:</label>
+                <input id="basePts" type="number" class="w-full bg-[#1c283a] border border-[#2a3b58] rounded-lg px-4 py-2 text-white outline-none focus:border-cyan-500 transition">
+            </div>
+        </div>
+
+        <div class="bg-[#1b2638] rounded-lg p-4 mb-6 border-l-4 border-cyan-500 space-y-2">
+            <div class="flex justify-between">
+                <span>Scores:</span>
+                <span id="pts" class="font-bold text-xl text-white">0</span>
+            </div>
+            <div class="flex justify-between">
+                <span>Matches:</span>
+                <span>
+                    <span id="total" class="text-white">0</span>
+                    (W:<span id="wText" class="text-green-400">0</span>
+                    L:<span id="lText" class="text-red-400">0</span>)
+                </span>
+            </div>
+            <div class="flex justify-between">
+                <span>Winrate:</span>
+                <span id="wr" class="text-white">0%</span>
+            </div>
+            <div class="flex justify-between pt-2 border-t border-[#2a3b58]">
+                <span>Осталось боев:</span>
+                <span id="left" class="text-cyan-400 font-bold text-lg">80</span>
+            </div>
+        </div>
+
+        <div class="space-y-3 mb-6">
+            <div class="flex gap-3">
+                <button id="winBtn" class="flex-1 bg-green-600 hover:bg-green-500 py-2.5 rounded-lg font-bold transition shadow">+ Win</button>
+                <input id="wManual" type="number" title="Победы (вручную)" class="w-16 bg-[#1c283a] border border-[#2a3b58] rounded-lg text-center text-white focus:border-green-500 outline-none transition">
+            </div>
+            <div class="flex gap-3">
+                <button id="loseBtn" class="flex-1 bg-red-600 hover:bg-red-500 py-2.5 rounded-lg font-bold transition shadow">+ Lose</button>
+                <input id="lManual" type="number" title="Поражения (вручную)" class="w-16 bg-[#1c283a] border border-[#2a3b58] rounded-lg text-center text-white focus:border-red-500 outline-none transition">
+            </div>
+            <div class="flex gap-3">
+                <button id="tieBtn" class="flex-1 bg-yellow-600 hover:bg-yellow-500 py-2.5 rounded-lg font-bold transition text-gray-900 shadow">+ Tie</button>
+                <input id="tManual" type="number" title="Ничьи (вручную)" class="w-16 bg-[#1c283a] border border-[#2a3b58] rounded-lg text-center text-white focus:border-yellow-500 outline-none transition">
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <div class="text-sm text-gray-400 mb-2 flex justify-between">
+                <span>Лог поражений:</span>
+                <span class="text-xs text-gray-500">(можно удалить ошибочные)</span>
+            </div>
+            <div id="history" class="bg-[#060b16] border border-[#1b2638] rounded-lg p-3 h-36 overflow-y-auto text-sm shadow-inner"></div>
+        </div>
+
+        <div class="space-y-3">
+            <button id="archiveBtn" class="w-full bg-blue-600 hover:bg-blue-500 font-bold py-3 rounded-lg transition shadow">Сохранить период (в архив)</button>
+            <button id="openHistory" class="w-full bg-gray-700 hover:bg-gray-600 font-bold py-3 rounded-lg transition shadow">Открыть историю</button>
+            <button id="resetBtn" class="w-full border border-red-700 text-red-400 hover:bg-red-900/40 font-bold py-3 rounded-lg transition">Сбросить текущие бои</button>
+        </div>
+    </div>
+
+    <!-- БЛОК ЖУРНАЛА ДЕЙСТВИЙ -->
+    <div class="bg-[#0f1a2b] border border-[#1f2c45] rounded-xl w-full max-w-xs p-6 shadow-2xl h-fit flex flex-col">
+        <h3 class="text-lg font-bold text-cyan-400 mb-3 border-b border-[#2a3b58] pb-2">Журнал действий</h3>
+        <p class="text-xs text-gray-500 mb-4">Хранит последние 15 действий. Изолирован для этого профиля.</p>
+        <div id="actionLogContainer" class="space-y-2 overflow-y-auto text-sm pr-2 flex-1 max-h-[60vh]">
+            <div class="text-gray-500 text-center mt-10">Загрузка...</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Модальное окно для поражений -->
+<div id="loseModal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-[#0f1a2b] border border-[#2a3b58] p-6 rounded-xl w-full max-w-sm shadow-2xl">
+        <h3 class="text-red-400 font-bold text-lg mb-3">Кому проиграл?</h3>
+        <input id="opponentInput" class="w-full bg-[#1c283a] border border-[#2a3b58] text-white rounded p-3 mb-4 outline-none focus:border-red-500 transition" placeholder="Ник противника..." autocomplete="off">
+        <div class="flex gap-2">
+            <button id="confirmLose" class="flex-1 bg-red-600 hover:bg-red-500 py-2.5 rounded font-bold shadow transition">Добавить</button>
+            <button id="cancelLose" class="flex-1 bg-gray-700 hover:bg-gray-600 py-2.5 rounded font-bold shadow transition">Отмена</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно Архива -->
+<div id="historyModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-[#0f1a2b] border border-[#2a3b58] rounded-xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl">
+        <div class="flex justify-between items-center p-5 border-b border-[#2a3b58]">
+            <h3 class="text-cyan-400 font-bold text-xl">Архив периодов</h3>
+            <button id="closeHistory" class="text-gray-400 hover:text-white text-3xl font-bold leading-none transition">&times;</button>
+        </div>
+        <div class="text-xs text-gray-500 px-5 pt-3">Нажмите на период, чтобы посмотреть список поражений.</div>
+        <div id="historyArchiveContent" class="p-5 overflow-y-auto flex-1 space-y-3">
+        </div>
+    </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"
+import { getDatabase, ref, onValue, update, runTransaction, push, set, get, remove, query, limitToLast, off } 
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"
+
+const firebaseConfig={
+    apiKey:"AIzaSyCR2Ni-NRL3Yq12WzKAyFHoWF68MKvIxj4",
+    authDomain:"olimp-8b22f.firebaseapp.com",
+    databaseURL:"https://olimp-8b22f-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId:"olimp-8b22f",
+    storageBucket:"olimp-8b22f.firebasestorage.app",
+    messagingSenderId:"594462240846",
+    appId:"1:594462240846:web:a0d7e056a1b42fa21e931f"
+}
+
+const app=initializeApp(firebaseConfig)
+const db=getDatabase(app)
+
+// Ссылки и переменные для текущего профиля
+let activeProfileId = localStorage.getItem("olyActiveProfile") || null;
+let statsRef, historyRef, archiveRef, actionLogRef;
+let unsubStats, unsubHistory, unsubLogs;
+
+let state={nick:"",base:50,w:0,l:0,t:0,history:[]}
+
+// Список профилей
+const profilesListRef = ref(db, 'olympiad/profilesList');
+
+// Слушатель списка профилей
+onValue(profilesListRef, (snapshot) => {
+    const data = snapshot.val();
+    const select = document.getElementById('profileSelect');
+    select.innerHTML = '<option value="">-- Выберите профиль --</option>';
+    
+    if (data) {
+        Object.entries(data).forEach(([id, name]) => {
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.innerText = name;
+            select.appendChild(opt);
+        });
+    }
+
+    if (activeProfileId && data && data[activeProfileId]) {
+        select.value = activeProfileId;
+    } else {
+        // Если профиль был удален или не найден
+        activeProfileId = null;
+        select.value = "";
+    }
+    
+    initActiveProfile(activeProfileId);
+});
+
+// Смена профиля через выпадающий список
+document.getElementById('profileSelect').onchange = (e) => {
+    activeProfileId = e.target.value;
+    if (activeProfileId) {
+        localStorage.setItem("olyActiveProfile", activeProfileId);
+    } else {
+        localStorage.removeItem("olyActiveProfile");
+    }
+    initActiveProfile(activeProfileId);
+}
+
+// Создание профиля
+document.getElementById('createProfileBtn').onclick = () => {
+    const name = prompt('Введите название профиля (например, ник персонажа):');
+    if(name && name.trim().length > 0) {
+        const newRef = push(profilesListRef);
+        set(newRef, name.trim());
+        activeProfileId = newRef.key;
+        localStorage.setItem("olyActiveProfile", activeProfileId);
+        // Список обновится и автоматически подхватит новый профиль
+    }
+}
+
+// Удаление профиля
+document.getElementById('deleteProfileBtn').onclick = () => {
+    if(!activeProfileId) return;
+    const profileName = document.getElementById('profileSelect').options[document.getElementById('profileSelect').selectedIndex].text;
+    
+    if(confirm(`Вы уверены, что хотите удалить профиль "${profileName}" и ВСЮ его историю без возможности восстановления?`)) {
+        remove(ref(db, `olympiad/profilesList/${activeProfileId}`));
+        remove(ref(db, `olympiad/profiles/${activeProfileId}`));
+        activeProfileId = null;
+        localStorage.removeItem("olyActiveProfile");
+        initActiveProfile(null);
+    }
+}
+
+
+// Инициализация рабочего пространства для выбранного профиля
+function initActiveProfile(pId) {
+    // Отписываемся от старых слушателей, чтобы данные не смешивались
+    if (unsubStats) unsubStats();
+    if (unsubHistory) unsubHistory();
+    if (unsubLogs) unsubLogs();
+
+    const appContent = document.getElementById('appContent');
+    const noProfileMsg = document.getElementById('noProfileMsg');
+    const deleteBtn = document.getElementById('deleteProfileBtn');
+
+    if (!pId) {
+        appContent.classList.remove('flex');
+        appContent.classList.add('hidden');
+        noProfileMsg.classList.remove('hidden');
+        noProfileMsg.classList.add('flex');
+        deleteBtn.classList.add('hidden');
+        return;
+    }
+
+    // Показываем интерфейс
+    appContent.classList.remove('hidden');
+    appContent.classList.add('flex');
+    noProfileMsg.classList.remove('flex');
+    noProfileMsg.classList.add('hidden');
+    deleteBtn.classList.remove('hidden');
+
+    // Сброс стейта для перерисовки
+    state={nick:"",base:50,w:0,l:0,t:0,history:[]};
+    updateUI();
+    document.getElementById("actionLogContainer").innerHTML = "<div class='text-gray-500 text-center mt-10'>Загрузка...</div>";
+
+    // Устанавливаем новые пути в базе данных
+    statsRef = ref(db, `olympiad/profiles/${pId}/stats`);
+    historyRef = ref(db, `olympiad/profiles/${pId}/history`);
+    archiveRef = ref(db, `olympiad/profiles/${pId}/archive`);
+    actionLogRef = ref(db, `olympiad/profiles/${pId}/actionLog`);
+
+    // Подписываемся на данные статистики
+    unsubStats = onValue(statsRef, s => {
+        const d = s.val();
+        if(d) {
+            state = {...state, ...d};
+        } else {
+            state.w = 0; state.l = 0; state.t = 0;
+        }
+        updateUI();
+    });
+
+    // Подписываемся на лог поражений
+    unsubHistory = onValue(historyRef, s => {
+        const d = s.val();
+        state.history = d ? Object.entries(d).map(([k, v]) => ({key: k, ...v})) : [];
+        updateUI();
+    });
+
+    // Подписываемся на журнал действий (строго 15 последних)
+    const recentLogsQuery = query(actionLogRef, limitToLast(15));
+    unsubLogs = onValue(recentLogsQuery, s => {
+        const d = s.val();
+        const container = document.getElementById("actionLogContainer");
+        container.innerHTML = "";
+        if(d) {
+            const logs = Object.entries(d).map(([k,v])=>({key:k, ...v})).sort((a,b)=> b.timestamp - a.timestamp);
+            logs.forEach(log => {
+                const div = document.createElement("div");
+                div.className = "flex justify-between items-start border-b border-[#1b2638] py-1.5";
+                div.innerHTML = `
+                    <span class="${log.colorClass} leading-tight">${log.text}</span>
+                    <span class="text-xs text-gray-500 ml-2 mt-0.5 whitespace-nowrap">${log.time}</span>
+                `;
+                container.appendChild(div);
+            });
+        } else {
+            container.innerHTML = "<div class='text-gray-600 text-center mt-4'>Действий пока нет</div>";
+        }
+    });
+}
+
+function logAction(text, colorClass="text-gray-300") {
+    if (!actionLogRef || !activeProfileId) return;
+    
+    const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+    push(actionLogRef, { text, colorClass, time, timestamp: Date.now() });
+
+    // Очистка старых логов в фоне для текущего профиля
+    const currentPId = activeProfileId;
+    get(actionLogRef).then(s => {
+        const d = s.val();
+        if (d) {
+            const keys = Object.keys(d).sort((a,b) => d[a].timestamp - d[b].timestamp);
+            if (keys.length > 20) {
+                const toDelete = keys.slice(0, keys.length - 15);
+                toDelete.forEach(k => remove(ref(db, `olympiad/profiles/${currentPId}/actionLog/${k}`)));
+            }
+        }
+    });
+}
+
+function updateUI(){
+    const total=state.w+state.l+state.t
+    const pts=state.base+state.w*10-state.l*10
+    const wr=total?Math.round(state.w/total*100):0
+
+    document.getElementById("displayNick").innerText=state.nick || "..."
+    document.getElementById("nickInput").value=state.nick || ""
+    document.getElementById("basePts").value=state.base || 50
+
+    document.getElementById("pts").innerText=pts
+    document.getElementById("total").innerText=total
+    document.getElementById("wText").innerText=state.w
+    document.getElementById("lText").innerText=state.l
+    document.getElementById("wr").innerText=wr+"%"
+    document.getElementById("left").innerText=80-total
+
+    if (document.activeElement !== document.getElementById("wManual")) document.getElementById("wManual").value = state.w || 0;
+    if (document.activeElement !== document.getElementById("lManual")) document.getElementById("lManual").value = state.l || 0;
+    if (document.activeElement !== document.getElementById("tManual")) document.getElementById("tManual").value = state.t || 0;
+
+    const historyEl=document.getElementById("history")
+    historyEl.innerHTML=""
+
+    state.history.slice().reverse().forEach(e=>{
+        const div=document.createElement("div")
+        div.className="flex justify-between items-center border-b border-[#1b2638] py-1.5 px-1 hover:bg-[#15202f] rounded transition"
+        
+        const textSpan = document.createElement("span");
+        textSpan.className = "text-gray-300";
+        textSpan.innerText = e.text;
+        
+        const delBtn = document.createElement("button");
+        delBtn.className = "text-red-800 hover:text-red-400 hover:bg-red-900/30 font-bold px-2 py-0.5 rounded transition";
+        delBtn.innerHTML = "×";
+        delBtn.title = "Удалить эту запись и отнять 1 поражение";
+        
+        delBtn.onclick = () => {
+            if(confirm("Удалить это поражение из лога? (Счетчик поражений уменьшится на 1)")) {
+                remove(ref(db, `olympiad/profiles/${activeProfileId}/history/` + e.key));
+                runTransaction(statsRef, c => {
+                    if(c && c.l > 0) c.l--;
+                    return c;
+                });
+                logAction("Отменено: " + e.text.split(':')[1], "text-gray-400");
+            }
+        };
+
+        div.appendChild(textSpan);
+        div.appendChild(delBtn);
+        historyEl.appendChild(div);
+    })
+}
+
+// Изменение данных
+document.getElementById("nickInput").oninput=e=>{ update(statsRef,{nick:e.target.value}) }
+document.getElementById("basePts").oninput=e=>{ update(statsRef,{base:Number(e.target.value)}) }
+
+document.getElementById("wManual").onchange=e=>{
+    const val = Math.max(0, parseInt(e.target.value) || 0);
+    update(statsRef, {w: val});
+    logAction("Ручное изм. побед: " + val, "text-gray-400");
+}
+document.getElementById("lManual").onchange=e=>{
+    const val = Math.max(0, parseInt(e.target.value) || 0);
+    update(statsRef, {l: val});
+    logAction("Ручное изм. поражений: " + val, "text-gray-400");
+}
+document.getElementById("tManual").onchange=e=>{
+    const val = Math.max(0, parseInt(e.target.value) || 0);
+    update(statsRef, {t: val});
+    logAction("Ручное изм. ничьих: " + val, "text-gray-400");
+}
+
+document.getElementById("winBtn").onclick=()=>{
+    runTransaction(statsRef,c=>{
+        if(!c)c={w:0,l:0,t:0}
+        const total=(c.w||0)+(c.l||0)+(c.t||0)
+        if(total>=80) return c
+        c.w++
+        return c
+    })
+    logAction("+1 Победа", "text-green-400");
+}
+
+document.getElementById("tieBtn").onclick=()=>{
+    runTransaction(statsRef,c=>{
+        if(!c)c={w:0,l:0,t:0}
+        const total=(c.w||0)+(c.l||0)+(c.t||0)
+        if(total>=80) return c
+        c.t++
+        return c
+    })
+    logAction("+1 Ничья", "text-yellow-400");
+}
+
+const modal=document.getElementById("loseModal")
+document.getElementById("loseBtn").onclick=()=>{
+    modal.classList.remove("hidden")
+    modal.classList.add("flex")
+    document.getElementById("opponentInput").focus();
+}
+
+document.getElementById("cancelLose").onclick=()=>{
+    modal.classList.add("hidden")
+    modal.classList.remove("flex")
+}
+
+document.getElementById("opponentInput").addEventListener("keypress", function(event) {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        document.getElementById("confirmLose").click();
+    }
+});
+
+document.getElementById("confirmLose").onclick=()=>{
+    const name=document.getElementById("opponentInput").value || "Неизвестный"
+    const totalNow=state.w+state.l+state.t+1
+
+    runTransaction(statsRef,c=>{
+        if(!c)c={w:0,l:0,t:0}
+        const total=(c.w||0)+(c.l||0)+(c.t||0)
+        if(total>=80) return c
+        c.l++
+        return c
+    })
+
+    push(historyRef,{
+        text:"Бой "+totalNow+": поражение от "+name
+    })
+
+    logAction("+1 Поражение (" + name + ")", "text-red-400");
+
+    modal.classList.add("hidden")
+    modal.classList.remove("flex")
+    document.getElementById("opponentInput").value = ""
+}
+
+document.getElementById("archiveBtn").onclick=()=>{
+    const total=state.w+state.l+state.t
+    if(!total) {
+        alert("Нет боев для сохранения!");
+        return;
+    }
+
+    const pts=state.base+state.w*10-state.l*10
+    const wr=Math.round(state.w/total*100)
+
+    push(archiveRef,{
+        nick:state.nick,
+        pts,
+        wr,
+        total,
+        date:new Date().toLocaleString(),
+        historyLog: state.history 
+    })
+
+    logAction("Период сохранен в архив", "text-blue-400");
+    alert("Период успешно сохранен в историю!")
+}
+
+document.getElementById("resetBtn").onclick=()=>{
+    if(confirm("Вы уверены, что хотите обнулить текущий счетчик боев?")) {
+        update(statsRef,{w:0,l:0,t:0})
+        set(historyRef,null)
+        logAction("Сброс текущих боев", "text-gray-400");
+    }
+}
+
+const historyModal = document.getElementById("historyModal");
+const historyArchiveContent = document.getElementById("historyArchiveContent");
+
+document.getElementById("openHistory").onclick = () => {
+    historyModal.classList.remove("hidden");
+    historyModal.classList.add("flex");
+    
+    historyArchiveContent.innerHTML = "<div class='text-gray-400 text-center mt-10'>Загрузка...</div>";
+    
+    get(archiveRef).then((snapshot) => {
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            historyArchiveContent.innerHTML = "";
+            const records = Object.entries(data).reverse(); 
+            
+            records.forEach(([key, record]) => {
+                const div = document.createElement("div");
+                div.className = "bg-[#1c283a] border border-[#2a3b58] p-3 rounded-lg flex flex-col transition shadow";
+                
+                const header = document.createElement("div");
+                header.className = "flex justify-between items-center";
+                header.innerHTML = `
+                    <div class="cursor-pointer flex-1 group" title="Нажмите, чтобы развернуть список боев">
+                        <div class="font-bold text-cyan-300 group-hover:text-cyan-200 transition">
+                            ${record.nick || 'Неизвестно'} 
+                            <span class="text-[10px] text-gray-500 ml-1">▼</span>
+                        </div>
+                        <div class="text-xs text-gray-400">${record.date || ''}</div>
+                    </div>
+                    <div class="text-right flex items-center gap-4">
+                        <div>
+                            <div class="font-bold text-white">${record.pts} PTS</div>
+                            <div class="text-sm text-gray-400">${record.total} боев (WR: ${record.wr}%)</div>
+                        </div>
+                        <button class="text-red-700 hover:text-red-400 hover:bg-red-900/30 rounded font-bold px-2 py-1 text-lg leading-none transition" title="Удалить период навсегда">×</button>
+                    </div>
+                `;
+
+                const details = document.createElement("div");
+                details.className = "hidden mt-3 pt-3 border-t border-[#2a3b58] text-sm text-gray-300 space-y-1 bg-[#15202f] p-3 rounded";
+                
+                if (record.historyLog && record.historyLog.length > 0) {
+                    record.historyLog.forEach(h => {
+                        const line = document.createElement("div");
+                        line.className = "border-b border-[#1b2638] pb-1 last:border-0";
+                        line.innerText = h.text; 
+                        details.appendChild(line);
+                    });
+                } else {
+                    details.innerHTML = "<div class='text-gray-500 italic'>Для этого периода нет сохраненных записей о боях.</div>";
+                }
+
+                header.querySelector('.cursor-pointer').onclick = () => {
+                    details.classList.toggle('hidden');
+                };
+
+                header.querySelector('button').onclick = () => {
+                    if(confirm("Вы точно хотите удалить этот период из истории навсегда?")) {
+                        remove(ref(db, `olympiad/profiles/${activeProfileId}/archive/` + key)).then(() => {
+                            div.remove();
+                            if(historyArchiveContent.children.length === 0) {
+                                historyArchiveContent.innerHTML = "<div class='text-gray-400 text-center mt-10'>Архив пуст</div>";
+                            }
+                        });
+                        logAction("Удален период из архива", "text-red-500");
+                    }
+                };
+
+                div.appendChild(header);
+                div.appendChild(details);
+                historyArchiveContent.appendChild(div);
+            });
+        } else {
+            historyArchiveContent.innerHTML = "<div class='text-gray-400 text-center mt-10'>Архив пуст</div>";
+        }
+    }).catch(error => {
+        historyArchiveContent.innerHTML = "<div class='text-red-400 text-center mt-10'>Ошибка загрузки архива</div>";
+    });
+};
+
+document.getElementById("closeHistory").onclick = () => {
+    historyModal.classList.add("hidden");
+    historyModal.classList.remove("flex");
+};
+
+</script>
+</body>
+</html>
