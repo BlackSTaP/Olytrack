@@ -382,7 +382,10 @@ function updateUI(){
             if(confirm("Удалить это поражение из лога? (Счетчик поражений уменьшится на 1)")) {
                 remove(ref(db, `olympiad/profiles/${activeProfileId}/history/` + e.key));
                 runTransaction(statsRef, c => {
-                    if(c && c.l > 0) c.l--;
+                    if (c) {
+                        c.l = c.l || 0;
+                        if(c.l > 0) c.l--;
+                    }
                     return c;
                 });
                 logAction("Отменено: " + e.text.split(':')[1], "text-gray-400");
@@ -417,22 +420,28 @@ document.getElementById("tManual").onchange=e=>{
 
 document.getElementById("winBtn").onclick=()=>{
     runTransaction(statsRef,c=>{
-        if(!c)c={w:0,l:0,t:0}
-        const total=(c.w||0)+(c.l||0)+(c.t||0)
-        if(total>=80) return c
-        c.w++
-        return c
+        if(!c) c = {w:0, l:0, t:0};
+        c.w = c.w || 0;
+        c.l = c.l || 0;
+        c.t = c.t || 0;
+        const total = c.w + c.l + c.t;
+        if(total >= 80) return c;
+        c.w++;
+        return c;
     })
     logAction("+1 Победа", "text-green-400");
 }
 
 document.getElementById("tieBtn").onclick=()=>{
     runTransaction(statsRef,c=>{
-        if(!c)c={w:0,l:0,t:0}
-        const total=(c.w||0)+(c.l||0)+(c.t||0)
-        if(total>=80) return c
-        c.t++
-        return c
+        if(!c) c = {w:0, l:0, t:0};
+        c.w = c.w || 0;
+        c.l = c.l || 0;
+        c.t = c.t || 0;
+        const total = c.w + c.l + c.t;
+        if(total >= 80) return c;
+        c.t++;
+        return c;
     })
     logAction("+1 Ничья", "text-yellow-400");
 }
@@ -461,11 +470,14 @@ document.getElementById("confirmLose").onclick=()=>{
     const totalNow=state.w+state.l+state.t+1
 
     runTransaction(statsRef,c=>{
-        if(!c)c={w:0,l:0,t:0}
-        const total=(c.w||0)+(c.l||0)+(c.t||0)
-        if(total>=80) return c
-        c.l++
-        return c
+        if(!c) c = {w:0, l:0, t:0};
+        c.w = c.w || 0;
+        c.l = c.l || 0;
+        c.t = c.t || 0;
+        const total = c.w + c.l + c.t;
+        if(total >= 80) return c;
+        c.l++;
+        return c;
     })
 
     push(historyRef,{
